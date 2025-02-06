@@ -85,6 +85,7 @@ namespace de
     // возвращает строку без пробелов в начале и конце
     std::string trim(std::string str)
     {
+        if (str.empty()) return "";
         std::string res = "";
         u32 start = 0;
         u32 end = str.size()-1;

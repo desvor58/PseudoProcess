@@ -21,7 +21,6 @@ struct label_info
 std::map<std::string, std::vector<std::string>> defines = {};
 std::map<std::string, label_info>               labels  = {};
 
-bool preprocess_defines_decl(Args args, std::vector<std::string> line);
 std::vector<std::string> preprocess_defines_parse(Args args, std::vector<std::string> line);
 std::vector<std::vector<std::string>> preprocess_commands_parse(Args args, std::vector<std::string> line);
 
@@ -34,8 +33,9 @@ preprocessor_ret preprocess(Args args, std::vector<std::string> lines)
     u16 byte_counter = 0;
 
     // lines to slines loop
+    if (args.log_preproc_loops) std::cout << "lines to slines loop" << std::endl;
     for (std::string line : lines) {
-        line = de::toc(line, ';');
+        line = de::toc(de::trim(line), ';');
         if (line.empty()) continue;
 
         std::vector<std::string> ss = de::split(de::trim(line), ' ');
@@ -45,21 +45,33 @@ preprocessor_ret preprocess(Args args, std::vector<std::string> lines)
         }
         slines.push_back(ss);
     }
+    if (args.log_preproc_loops) std::cout << "lines to slines loop end" << std::endl;
 
     // preproc defines decl loop
+    if (args.log_preproc_loops) std::cout << "preproc defines decl loop" << std::endl;
     for (int i = 0; i < slines.size(); i++) {
         std::vector<std::string> line = slines[i];
 
-        bool ret = preprocess_defines_decl(args, line);
+        bool ret = false;
+        if (line[0][0] == '#') {
+            if (de::signore(line[0], '#') == "define") {
+                defines[de::signore(line[1], '#')] = de::slise(line, 2, -1);
+                ret = true;
+            }
+        }
+
         if (ret) slines.erase(slines.begin() + i);
     }
+    if (args.log_preproc_loops) std::cout << "preproc defines decl loop end" << std::endl;
 
     // preproc defines parse loop
+    if (args.log_preproc_loops) std::cout << "preproc defines parse loop" << std::endl;
     for (int i = 0; i < slines.size(); i++) {
         std::vector<std::string> line = slines[i];
         
         slines[i] = preprocess_defines_parse(args, line);
     }
+    if (args.log_preproc_loops) std::cout << "preproc defines parse loop end" << std::endl;
 
     // preproc commands parse loop
     if (args.log_preproc_loops) std::cout << "preproc commands parse loop" << std::endl;
@@ -138,20 +150,13 @@ std::vector<std::string> preprocess_defines_parse(Args args, std::vector<std::st
     return res;
 }
 
-bool preprocess_defines_decl(Args args, std::vector<std::string> line)
-{
-    if (line[0][0] == '#') {
-        if (de::signore(line[0], '#') == "define") {
-            defines[de::signore(line[1], '#')] = de::slise(line, 2, -1);
-            return true;
-        }
-    }
-    return false;
-}
-
 std::vector<std::vector<std::string>> preprocess_commands_parse(Args args, std::vector<std::string> line)
 {
     std::vector<std::vector<std::string>> res = {};
+
+    if (line[0] == "inline") {
+        
+    }
 
     if (line[0] == "push") {
         bool bs = false;
