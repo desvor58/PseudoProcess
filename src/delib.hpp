@@ -58,7 +58,7 @@ namespace de
     {
         std::string res;
 
-        if (end == 0) end = str.size();
+        if (end == -1) end = str.size();
         for (int i = start; i < end; i++) {
             res += str[i];
         } 
@@ -71,7 +71,7 @@ namespace de
     {
         std::vector<T> res;
 
-        if (end == 0) end = vec.size();
+        if (end == -1) end = vec.size();
         for (int i = start; i < end; i++) {
             res.push_back(vec[i]);
         } 
@@ -129,6 +129,8 @@ namespace de
         return res;
     }
 
+    // функция обратная split
+    // принимает вектор, а вовращает одну строку
     std::string merger(std::vector<std::string> strs, char splitter)
     {
         std::string res = "";
@@ -152,5 +154,14 @@ namespace de
             res += c;
         }
         return res;
+    }
+
+    // 
+    template<typename T>
+    void push_vec(std::vector<T> *vec, std::vector<T> new_vec)
+    {
+        for (T el : new_vec) {
+            vec->push_back(el);
+        }
     }
 };

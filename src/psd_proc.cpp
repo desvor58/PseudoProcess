@@ -14,6 +14,7 @@ class Args
 public:
     std::string infile_name = "";
     bool dbg_mode           = false;
+    bool endout             = false;
 
     Args(int argc, char **argv)
     {
@@ -24,6 +25,10 @@ public:
             }
             if (strcmp(argv[i], "-dbg") == 0) {
                 dbg_mode = true;
+                continue;
+            }
+            if (strcmp(argv[i], "-endout") == 0) {
+                endout = true;
                 continue;
             }
             infile_name = argv[i];
@@ -81,11 +86,15 @@ void ops_exeting(i8 op)
         break;
         
         case operations::_AND:
-            set(registers::_rg3, (get(registers::_rg1) && get(registers::_rg2)));
+            set(registers::_rg3, (get(registers::_rg1) & get(registers::_rg2)));
         break;
         
         case operations::_OR:
-            set(registers::_rg3, (get(registers::_rg1) || get(registers::_rg2)));
+            set(registers::_rg3, (get(registers::_rg1) | get(registers::_rg2)));
+        break;
+        
+        case operations::_XOR:
+            set(registers::_rg3, (get(registers::_rg1) ^ get(registers::_rg2)));
         break;
         
         case operations::_NOT:
@@ -98,6 +107,14 @@ void ops_exeting(i8 op)
         
         case operations::_SHL:
             set(registers::_rg3, (get(registers::_rg1) << get(registers::_rg2)));
+        break;
+
+        case operations::_INC:
+            set(registers::_ma, get(registers::_ma) + 1);
+        break;
+
+        case operations::_DEC:
+            set(registers::_ma, get(registers::_ma) - 1);
         break;
     }
 }
@@ -134,6 +151,31 @@ u16 conds_executing(i8 op, i8 reg, i8 page, u8 jmpaddr)
     return 0;
 }
 
+void out_analis()
+{
+    if (out == 255) {
+        exit(0);
+    }
+
+    switch (out)
+    {
+        case 0x01: {
+            std::cout << mem[ma];
+        } break;
+
+        case 0x02: {
+            while (mem[ma] != '\0') {
+                std::cout << mem[ma];
+                ma++;
+            }
+        } break;
+
+        case 0x03: {
+            in = getchar();
+        } break;
+    }
+}
+
 int main(int argc, char **argv)
 {
     Args args(argc, argv);
@@ -148,6 +190,8 @@ int main(int argc, char **argv)
         }
     }
     file.close();
+
+    system("cls");
 
     for (u16 i = 0; (i < bytes.size()); i++) {
         u8 byte = bytes[i];
@@ -183,6 +227,8 @@ int main(int argc, char **argv)
             } break;
         }
 
+        out_analis();
+
         if (args.dbg_mode) {
             std::cout << "rg0: " << +rg0 << std::endl;
             std::cout << "rg1: " << +rg1 << std::endl;
@@ -196,15 +242,20 @@ int main(int argc, char **argv)
 
             system("pause");
         }
+
+        in  = 0;
+        out = 0;
     }
 
-    std::cout << "rg0: " << +rg0 << std::endl;
-    std::cout << "rg1: " << +rg1 << std::endl;
-    std::cout << "rg2: " << +rg2 << std::endl;
-    std::cout << "rg3: " << +rg3 << std::endl;
-    std::cout << "ma:  " << +ma  << std::endl;
-    std::cout << "in:  " << +in  << std::endl;
-    std::cout << "out: " << +out << std::endl;
+    if (args.endout) {
+        std::cout << "rg0: " << +rg0 << std::endl;
+        std::cout << "rg1: " << +rg1 << std::endl;
+        std::cout << "rg2: " << +rg2 << std::endl;
+        std::cout << "rg3: " << +rg3 << std::endl;
+        std::cout << "ma:  " << +ma  << std::endl;
+        std::cout << "in:  " << +in  << std::endl;
+        std::cout << "out: " << +out << std::endl;
+    }
 
     return 0;
 }

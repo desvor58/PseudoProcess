@@ -21,9 +21,9 @@ struct label_info
 std::map<std::string, std::vector<std::string>> defines = {};
 std::map<std::string, label_info>               labels  = {};
 
-bool preprocess_commands(Args args, std::vector<std::string> line);
-std::vector<std::string> preprocess_commands_parse(Args args, std::vector<std::string> line);
-void preprocess_labels_parse(Args args, std::vector<std::string> line);
+bool preprocess_defines_decl(Args args, std::vector<std::string> line);
+std::vector<std::string> preprocess_defines_parse(Args args, std::vector<std::string> line);
+std::vector<std::vector<std::string>> preprocess_commands_parse(Args args, std::vector<std::string> line);
 
 preprocessor_ret preprocess(Args args, std::vector<std::string> lines)
 {
@@ -46,22 +46,42 @@ preprocessor_ret preprocess(Args args, std::vector<std::string> lines)
         slines.push_back(ss);
     }
 
-    // preproc commands decl loop
+    // preproc defines decl loop
     for (int i = 0; i < slines.size(); i++) {
         std::vector<std::string> line = slines[i];
 
-        bool ret = preprocess_commands(args, line);
+        bool ret = preprocess_defines_decl(args, line);
         if (ret) slines.erase(slines.begin() + i);
     }
 
-    // preproc command parse loop
+    // preproc defines parse loop
     for (int i = 0; i < slines.size(); i++) {
         std::vector<std::string> line = slines[i];
         
-        slines[i] = preprocess_commands_parse(args, line);
+        slines[i] = preprocess_defines_parse(args, line);
     }
 
+    // preproc commands parse loop
+    if (args.log_preproc_loops) std::cout << "preproc commands parse loop" << std::endl;
+    for (int i = 0; i < slines.size(); i++) {
+        std::vector<std::string> line = slines[i];
+
+        std::vector<std::vector<std::string>> start_part = de::slise(slines, 0, i);
+        std::vector<std::vector<std::string>> end_part   = de::slise(slines, i+1, -1);
+        std::vector<std::vector<std::string>> new_part   = preprocess_commands_parse(args, line);
+    
+        std::vector<std::vector<std::string>> new_slines = {};
+
+        de::push_vec(&new_slines, start_part);
+        de::push_vec(&new_slines, new_part);
+        de::push_vec(&new_slines, end_part);
+
+        slines = new_slines;
+    }
+    if (args.log_preproc_loops) std::cout << "preproc commands parse loop end" << std::endl;
+
     // labels declaration loop
+    if (args.log_preproc_loops) std::cout << "labels decl loop" << std::endl;
     for (int i = 0; i < slines.size(); i++) {
         std::vector<std::string> line = slines[i];
 
@@ -84,7 +104,10 @@ preprocessor_ret preprocess(Args args, std::vector<std::string> lines)
             }
         }
     }
+    if (args.log_preproc_loops) std::cout << "labels decl loop end" << std::endl;
     
+    // labels parse loop
+    if (args.log_preproc_loops) std::cout << "labels parse loop" << std::endl;
     for (int i = 0; i < slines.size(); i++) {
         std::vector<std::string> line = slines[i];
 
@@ -95,13 +118,14 @@ preprocessor_ret preprocess(Args args, std::vector<std::string> lines)
             }
         }
     }
-
+    if (args.log_preproc_loops) std::cout << "labels parse loop end" << std::endl;
+    
     res.lines = slines;
 
     return res;
 }
 
-std::vector<std::string> preprocess_commands_parse(Args args, std::vector<std::string> line)
+std::vector<std::string> preprocess_defines_parse(Args args, std::vector<std::string> line)
 {
     std::vector<std::string> res = line;
 
@@ -114,13 +138,50 @@ std::vector<std::string> preprocess_commands_parse(Args args, std::vector<std::s
     return res;
 }
 
-bool preprocess_commands(Args args, std::vector<std::string> line)
+bool preprocess_defines_decl(Args args, std::vector<std::string> line)
 {
     if (line[0][0] == '#') {
         if (de::signore(line[0], '#') == "define") {
-            defines[de::signore(line[1], '#')] = de::slise(line, 2, 0);
+            defines[de::signore(line[1], '#')] = de::slise(line, 2, -1);
             return true;
         }
     }
     return false;
+}
+
+std::vector<std::vector<std::string>> preprocess_commands_parse(Args args, std::vector<std::string> line)
+{
+    std::vector<std::vector<std::string>> res = {};
+
+    if (line[0] == "push") {
+        bool bs = false;
+        for (char c : de::merger(de::slise(line, 1, -1), ' ')) {
+            if (bs) {
+                if (c == '\\') {
+                    res.push_back({"wrt", "mem", std::to_string('\\')});
+                    res.push_back({"inc"});
+                }
+                if (c == 'n') {
+                    res.push_back({"wrt", "mem", std::to_string('\n')});
+                    res.push_back({"inc"});
+                }
+                if (c == '0') {
+                    res.push_back({"wrt", "mem", std::to_string('\0')});
+                    res.push_back({"inc"});
+                }
+                continue;
+            }
+            if (c == '\\') {
+                bs = true;
+                continue;
+            }
+            res.push_back({"wrt", "mem", std::to_string(c)});
+            res.push_back({"inc"});
+        }
+    }
+    else {
+        res = {line};
+    }
+
+    return res;
 }

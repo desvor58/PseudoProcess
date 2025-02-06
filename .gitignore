@@ -1,5 +1,6 @@
 *.exe
-tests/
+tests
+/
 .vscode/
 *.bc
 *.tbc
