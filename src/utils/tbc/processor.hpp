@@ -6,13 +6,13 @@
 #include "../../delib.hpp"
 #include "tbc_args.hpp"
 
-std::vector<i8> process(Args args, std::vector<std::vector<std::string>> lines)
+std::vector<i8> process(Args args, std::vector<vectok> lines)
 {
     std::vector<i8> res {};
     u8 byte = 0;
 
     // цикл по строкам
-    for (std::vector<std::string> line : lines) {
+    for (vectok line : lines) {
         if (line.empty()) continue;
 
         if (comms.count(line[0]) > 0) {

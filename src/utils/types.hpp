@@ -9,6 +9,10 @@ typedef unsigned char   u8;
 typedef unsigned short  u16;
 typedef unsigned int    u32;
 
+typedef std::string                           token;
+typedef std::vector<std::string>              vectok;
+typedef std::vector<std::vector<std::string>> part;
+
 
 enum commands
 {

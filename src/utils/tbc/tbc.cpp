@@ -41,8 +41,8 @@ int main(int argc, char **argv)
 
     std::cout << std::endl << "PROCESSED PARTS" << std::endl;
 
-    for (std::vector<std::string> v : preproc_ret.lines) {
-        for (std::string s : v) {
+    for (vectok toks : preproc_ret.lines) {
+        for (token s : toks) {
             std::cout << s << " END ";
         }
         std::cout << std::endl;
