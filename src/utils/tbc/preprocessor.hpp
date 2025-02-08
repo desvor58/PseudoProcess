@@ -5,7 +5,7 @@
 
 #include "../types.hpp"
 #include "tbc_args.hpp"
-#include "../../delib.hpp"
+#include "../delib.hpp"
 
 struct preprocessor_ret
 {

@@ -1,6 +1,6 @@
 *.exe
 tests
-/
-.vscode/
+src/utils
+.vscode
 *.bc
 *.tbc

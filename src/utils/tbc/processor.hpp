@@ -3,7 +3,7 @@
 #include <string>
 
 #include "../types.hpp"
-#include "../../delib.hpp"
+#include "../delib.hpp"
 #include "tbc_args.hpp"
 
 std::vector<i8> process(Args args, std::vector<vectok> lines)
