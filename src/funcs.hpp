@@ -1,9 +1,12 @@
 #pragma once
 
 #include "process.hpp"
+#include "out_funcs.hpp"
 
-void ops_exeting(Process *proc, i8 op)
+void ops_exeting(PPinfo pp_info, i8 op)
 {
+    Process *proc = pp_info.curent_process;
+
     switch (op)
     {
         case operations::_ADD:
@@ -48,8 +51,10 @@ void ops_exeting(Process *proc, i8 op)
     }
 }
 
-u16 conds_executing(Process *proc, i8 op, i8 reg, i8 page, u8 jmpaddr)
+u16 conds_executing(PPinfo pp_info, i8 op, i8 reg, i8 page, u8 jmpaddr)
 {
+    Process *proc = pp_info.curent_process;
+
     switch (op)
     {
         case conditionals::_JMP:
@@ -80,8 +85,29 @@ u16 conds_executing(Process *proc, i8 op, i8 reg, i8 page, u8 jmpaddr)
     return 0;
 }
 
-void out_analis(Process *proc)
+static u8 out_subfunc_args_num = 0;
+static std::vector<i8> out_subfunc_args {};
+static void (*out_subfunc) (PPinfo, std::vector<i8>) = nullptr;
+
+void out_analis(PPinfo pp_info)
 {
+    Process *proc = pp_info.curent_process;
+    PPbuffers *buffers = pp_info.buffers;
+
+    if (out_subfunc_args_num > 0) {
+        out_subfunc_args.push_back(proc->out);
+        out_subfunc_args_num--;
+
+        if (out_subfunc_args_num == 0) {
+            if (out_subfunc != nullptr) {
+                out_subfunc(pp_info, out_subfunc_args);
+                out_subfunc = nullptr;
+                out_subfunc_args.clear();
+            }
+        }
+        return;
+    }
+
     if (proc->out == 255) {
         exit(0);
     }
@@ -101,6 +127,66 @@ void out_analis(Process *proc)
 
         case 0x03: {
             proc->in = getchar();
+        } break;
+
+        case 0x04: {
+            std::string str = "";
+            std::cin >> str;
+            for (char c : str) {
+                proc->mem[proc->ma] = c;
+                proc->ma++;
+            }
+        } break;
+
+        case 0x05: {
+            out_subfunc_args_num = 1;
+            out_subfunc = out0x05;
+        } break;
+
+        case 0x06: {
+            proc->mem[proc->ma] = getchar();
+        } break;
+
+        case 0x07: {
+            out_subfunc_args_num = 1;
+            out_subfunc = out0x07;
+        } break;
+
+        case 0x09: {
+            out_subfunc_args_num = 1;
+            out_subfunc = out0x09;
+        } break;
+
+        case 0x0A: {
+            proc->mem[proc->ma] = buffers->long_buf_index>>8;
+            proc->ma++;
+            proc->mem[proc->ma] = buffers->long_buf_index;
+            proc->ma++;
+        } break;
+
+        case 0x0B: {
+            out_subfunc_args_num = 1;
+            out_subfunc = out0x0B;
+        } break;
+
+        case 0x0C: {
+            while (proc->mem[proc->ma] != '\0') {
+                buffers->long_buf[buffers->long_buf_index] = proc->mem[proc->ma];
+                buffers->long_buf_index++;
+                proc->ma++;
+            }
+        } break;
+
+        case 0x0D: {
+            proc->in = buffers->long_buf[buffers->long_buf_index];
+        } break;
+
+        case 0x0E: {
+            while (buffers->long_buf[buffers->long_buf_index] != 00) {
+                proc->mem[proc->ma] = buffers->long_buf[buffers->long_buf_index];
+                proc->ma++;
+                buffers->long_buf_index++;
+            }
         } break;
     }
 }

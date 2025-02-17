@@ -43,3 +43,17 @@ public:
         return 0;
     }
 };
+
+struct PPbuffers
+{
+    u8   prgm_buf[65536]  = {};
+    u16  prgm_buf_index   = 0;
+    i8   long_buf[65536]  = {};
+    u16  long_buf_index   = 0;
+};
+
+struct PPinfo
+{
+    Process *curent_process;
+    PPbuffers *buffers;
+};

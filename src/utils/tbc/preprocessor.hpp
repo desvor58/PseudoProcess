@@ -214,7 +214,12 @@ part preprocess_commands_parse(Args args, part lines, int index)
     if (inlines.count(line[0]) > 0) {
         res = inlines[line[0]];
     }
-    if (line[0] == "push") {
+    else if (line[0] == "out") {
+        for (std::string p : de::slise(line, 1, -1)) {
+            res.push_back({"wrt", "out", p});
+        }
+    }
+    else if (line[0] == "push") {
         bool bs = false;
         for (char c : de::merger(de::slise(line, 1, -1), ' ')) {
             if (bs) {
