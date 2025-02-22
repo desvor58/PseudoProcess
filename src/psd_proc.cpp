@@ -36,36 +36,36 @@ public:
 
 static PPbuffers buffers {};
 static Process   current_proc;
+static u8        disk[65563] = {};
 
-static PPinfo pp_info {&current_proc, &buffers};
+static PPinfo pp_info {&current_proc, &buffers, disk, 0};
 
 int main(int argc, char **argv)
 {
     Args args(argc, argv);
 
-    std::vector<u8> bytes {};
-
     std::ifstream file(args.infile_name, std::ios::binary);
     {
         char byte = ' ';
         while (file.get(byte)) {
-            bytes.push_back(byte);
+            buffers.prgm_buf[buffers.prgm_buf_index] = byte;
+            buffers.prgm_buf_index++;
         }
     }
     file.close();
 
     system("cls");
-    for (u16 i = 0; (i < bytes.size()); i++) {
-        u8 byte = bytes[i];
+    for (buffers.prgm_buf_index = 0; buffers.prgm_buf_index < 65535; buffers.prgm_buf_index++) {
+        u8 byte = buffers.prgm_buf[buffers.prgm_buf_index];
 
         if (args.dbg_mode) {
-            std::cout << "programm address: " << i << std::endl;
+            std::cout << "programm address: " << buffers.prgm_buf_index << std::endl;
         }
         
         switch ((byte & 0b11000000)>>6) {
             case commands::_RGWRT: {
                 i8 to = (byte & 0b00111000)>>3;
-                current_proc.set(to, bytes[++i]);
+                current_proc.set(to, buffers.prgm_buf[++buffers.prgm_buf_index]);
             } break;
 
             case commands::_MOV: {
@@ -77,15 +77,14 @@ int main(int argc, char **argv)
             case commands::_OPERATIONS: {
                 i8 op  = (byte & 0b00111100)>>2;
                 ops_exeting(pp_info, op);
-            
             } break;
             
             case commands::_CONDITIONALS: {
                 i8 op      = (byte & 0b00110000)>>4;
                 i8 reg     = (byte & 0b00001100)>>2;
                 i8 page    =  byte & 0b00000011;
-                u8 jmpaddr =  bytes[++i];
-                i = conds_executing(pp_info, op, reg, page, jmpaddr) - 1;
+                u8 jmpaddr =  buffers.prgm_buf[++buffers.prgm_buf_index];
+                buffers.prgm_buf_index = conds_executing(pp_info, op, reg, page, jmpaddr) - 1;
             } break;
         }
 
@@ -109,7 +108,7 @@ int main(int argc, char **argv)
             }
             std::cout << std::endl;
 
-            std::cout << "next addr: " << i+1 << std::endl;
+            std::cout << "next addr: " << buffers.prgm_buf_index+1 << std::endl;
 
             getchar();
         }

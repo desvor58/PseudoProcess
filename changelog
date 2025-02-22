@@ -1,1 +1,15 @@
-PseudoProcessor 5.2.1
+GENERAL
+- all build files move to bin/ folder
+- build.bat file for build all programms
+
+PseudoProcessor 5.2.2
+- disk outcomms
+- dbg mode changed
+
+TBC 4.2.1
+- reparse system
+- hex and binary numbers
+- include command
+
+BCView 1.0.1
+- special proggram for view of .bc files as TBC commands

@@ -56,4 +56,6 @@ struct PPinfo
 {
     Process *curent_process;
     PPbuffers *buffers;
+    u8 *disk;
+    u16 disk_index;
 };

@@ -28,6 +28,17 @@ namespace de
         }
         return true;
     }
+    // проверяет что строка являеться шеснацетиричным числом числом
+    bool sishd(std::string str)
+    {
+        for (char c : str) {
+            if (!isdigit(c)) {
+                if (c >= 'A' && c <= 'F') continue;
+                return false;
+            }
+        }
+        return true;
+    }
 
     /// @brief remove from string choosed chars
     /// @param str sourse string
@@ -85,6 +96,7 @@ namespace de
     // возвращает строку без пробелов в начале и конце
     std::string trim(std::string str)
     {
+        //std::cout << str << std::endl;
         if (str.empty()) return "";
         std::string res = "";
         u32 start = 0;
@@ -119,8 +131,8 @@ namespace de
                 if (!buf.empty()) {
                     res.push_back(buf);
                     buf = "";
-                    continue;
                 }
+                continue;
             }
             buf += c;
         }
@@ -164,5 +176,18 @@ namespace de
         for (T el : new_vec) {
             vec->push_back(el);
         }
+    }
+
+    std::string replace(std::string str, char p, char r)
+    {
+        std::string res = str;
+
+        for (int i = 0; i < res.size(); i++) {
+            if (res[i] == p) {
+                res[i] = r;
+            }
+        }
+
+        return res;
     }
 };

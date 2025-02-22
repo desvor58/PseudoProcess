@@ -2,10 +2,18 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 
 #include "../types.hpp"
 #include "tbc_args.hpp"
 #include "../delib.hpp"
+
+std::vector<std::string> reparse_tokens = {
+    "define",
+    "inline",
+    "include",
+    "push",
+};
 
 struct preprocessor_ret
 {
@@ -26,6 +34,9 @@ std::map<std::string, part>       programms = {};
 vectok preprocess_defines_parse(Args args, vectok line);
 part preprocess_commands_decl(Args args, part lines, int index);
 part preprocess_commands_parse(Args args, part lines, int index);
+part preprocess_lines_parse(Args args, vectok lines);
+
+u16 byte_counter = 0;
 
 preprocessor_ret preprocess(Args args, vectok lines)
 {
@@ -33,23 +44,12 @@ preprocessor_ret preprocess(Args args, vectok lines)
 
     part slines {};
 
-    u16 byte_counter = 0;
-
     // lines to slines loop
     if (args.log_preproc_loops) std::cout << "lines to slines loop" << std::endl;
-        for (std::string line : lines) {
-            line = de::toc(de::trim(line), ';');
-            if (line.empty()) continue;
-
-            vectok ss = de::split(de::trim(line), ' ');
-            for (int i = 0; i < ss.size(); i++) {
-                if (ss[i].empty()) ss.erase(ss.begin() + i);
-                ss[i] = de::trim(ss[i]);
-            }
-            slines.push_back(ss);
-        }
+        slines = preprocess_lines_parse(args, lines);
     if (args.log_preproc_loops) std::cout << "lines to slines loop end" << std::endl;
 
+reparse:
     // preproc defines decl loop
     if (args.log_preproc_loops) std::cout << "preproc defines decl loop" << std::endl;
         for (int i = 0; i < slines.size(); i++) {
@@ -116,6 +116,57 @@ preprocessor_ret preprocess(Args args, vectok lines)
         }
     if (args.log_preproc_loops) std::cout << "preproc commands parse loop end" << std::endl;
 
+    if (args.log_preproc_loops) std::cout << "preproc numbers parse loop start" << std::endl;
+        for (int i = 0; i < slines.size(); i++) {
+            vectok line = slines[i];
+            
+            for (int j = 0; j < line.size(); j++) {
+                if (line[j][line[j].size() - 1] == 'h') {
+                    if (de::sishd(de::slise(line[j], 0, line[j].size()-2))) {
+                        slines[i][j] = std::to_string(std::stoi(de::signore(line[j], 'h'), 0, 16));
+                    }
+                }
+                if (line[j][line[j].size() - 1] == 'b') {
+                    if (de::sisd(de::slise(line[j], 0, line[j].size()-2))) {
+                        slines[i][j] = std::to_string(std::stoi(de::signore(line[j], 'b'), 0, 2));
+                    }
+                }
+            }
+        }
+    if (args.log_preproc_loops) std::cout << "preproc numbers parse loop end" << std::endl;
+
+    for (int i = 0; i < slines.size(); i++) {
+        vectok line = slines[i];
+        u32 reparse_agrs = 0;
+
+        if (line[0] == "out") {
+            reparse_agrs++;
+        }
+
+        for (std::string tok : line) {
+            if (std::count(reparse_tokens.begin(), reparse_tokens.end(), tok) > 0) {
+                reparse_agrs++;
+            }
+
+            if (defines.count(tok) > 0
+             || labels.count(tok) > 0
+             || inlines.count(tok) > 0) {
+                reparse_agrs++;
+            }
+        }
+
+        if (reparse_agrs > 0) {
+            goto reparse;
+        }
+    }
+
+    for (auto l : slines) {
+        for (auto t : l) {
+            std::cout << t << " END ";
+        }
+        std::cout << std::endl;
+    }
+
     // labels declaration loop
     if (args.log_preproc_loops) std::cout << "labels decl loop" << std::endl;
         for (int i = 0; i < slines.size(); i++) {
@@ -155,6 +206,7 @@ preprocessor_ret preprocess(Args args, vectok lines)
             }
         }
     if (args.log_preproc_loops) std::cout << "labels parse loop end" << std::endl;
+
     
     res.lines = slines;
 
@@ -214,9 +266,38 @@ part preprocess_commands_parse(Args args, part lines, int index)
     if (inlines.count(line[0]) > 0) {
         res = inlines[line[0]];
     }
+    else if (line[0] == "include") {
+        std::ifstream file(line[1]);
+        char         c;
+        std::string  str;
+        vectok       flines;
+
+        std::cout << "parse file " << line[1] << std::endl;
+
+        while (file.get(c)) {
+            if (c == '\n') {
+                if (!str.empty()) {
+                    flines.push_back(str);
+                    str = "";
+                }
+                continue;
+            }
+            str += c;
+        }
+
+        // for (std::string line : flines) {
+        //     std::cout << line;
+        // }
+
+        res = preprocess_lines_parse(args, flines);
+    }
     else if (line[0] == "out") {
+        std::string comm = "wrt";
         for (std::string p : de::slise(line, 1, -1)) {
-            res.push_back({"wrt", "out", p});
+            if (regs.count(p) > 0) {
+                comm = "mov";
+            }
+            res.push_back({comm, "out", p});
         }
     }
     else if (line[0] == "push") {
@@ -247,6 +328,37 @@ part preprocess_commands_parse(Args args, part lines, int index)
     }
     else {
         res = {line};
+    }
+
+    return res;
+}
+
+part preprocess_lines_parse(Args args, vectok lines)
+{
+    part res {};
+
+    for (std::string line : lines) {
+        line = de::toc(de::trim(line), ';');
+        if (line.empty()) continue;
+
+        //std::cout << line << std::endl;
+
+        vectok ss = de::split(de::trim(line), ' ');
+
+        // for (token l : ss) {
+        //     std::cout << "current token: " << de::replace(l, ' ', '~') << std::endl;
+        //     if (de::trim(l).empty()) {
+        //         continue;
+        //         std::cout << "TRIM EMPTY!!!  " << l << std::endl;
+        //     }
+        //     std::cout << de::replace(de::replace(l, '\0', '$'), ' ', '~') << std::endl << std::endl;
+        // }
+
+        for (int i = 0; i < ss.size(); i++) {
+            if (de::trim(ss[i]).empty()) ss.erase(ss.begin() + i);
+            ss[i] = de::trim(ss[i]);
+        }
+        res.push_back(ss);
     }
 
     return res;

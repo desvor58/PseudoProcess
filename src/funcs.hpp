@@ -10,35 +10,35 @@ void ops_exeting(PPinfo pp_info, i8 op)
     switch (op)
     {
         case operations::_ADD:
-            proc->rg3 = proc->rg1 + proc->rg2;
+            proc->rg1 = proc->rg1 + proc->rg2;
         break;
         
         case operations::_SUB:
-            proc->rg3 = proc->rg1 - proc->rg2;
+            proc->rg1 = proc->rg1 - proc->rg2;
         break;
         
         case operations::_AND:
-            proc->rg3 = proc->rg1 & proc->rg2;
+            proc->rg1 = proc->rg1 & proc->rg2;
         break;
         
         case operations::_OR:
-            proc->rg3 = proc->rg1 | proc->rg2;
+            proc->rg1 = proc->rg1 | proc->rg2;
         break;
         
         case operations::_XOR:
-            proc->rg3 = proc->rg1 ^ proc->rg2;
+            proc->rg1 = proc->rg1 ^ proc->rg2;
         break;
         
         case operations::_NOT:
-            proc->rg3 = !proc->rg1;
+            proc->rg1 = !proc->rg1;
         break;
         
         case operations::_SHR:
-            proc->rg3 = proc->rg1 >> proc->rg2;
+            proc->rg1 = proc->rg1 >> proc->rg2;
         break;
         
         case operations::_SHL:
-            proc->rg3 = proc->rg1 << proc->rg2;
+            proc->rg1 = proc->rg1 << proc->rg2;
         break;
 
         case operations::_INC:
@@ -82,7 +82,7 @@ u16 conds_executing(PPinfo pp_info, i8 op, i8 reg, i8 page, u8 jmpaddr)
             }
         break;
     }
-    return 0;
+    return pp_info.buffers->prgm_buf_index+1;
 }
 
 static u8 out_subfunc_args_num = 0;
@@ -153,7 +153,7 @@ void out_analis(PPinfo pp_info)
         } break;
 
         case 0x09: {
-            out_subfunc_args_num = 1;
+            out_subfunc_args_num = 2;
             out_subfunc = out0x09;
         } break;
 
@@ -187,6 +187,56 @@ void out_analis(PPinfo pp_info)
                 proc->ma++;
                 buffers->long_buf_index++;
             }
+        } break;
+
+        case 0x21: {
+            std::string disk_name = "";
+    
+            for (int i = 0; i < 65563; i++) {
+                pp_info.disk[i] = 0;
+            }
+
+            std::cin >> disk_name;
+            std::ifstream diskf(disk_name); {
+                char b;
+                for (int i = 0; diskf.get(b); i++) {
+                    pp_info.disk[i] = b;
+                }
+            } diskf.close();
+        } break;
+
+        case 0x22: {} break;
+
+        case 0x23: {
+            out_subfunc_args_num = 2;
+            out_subfunc = out0x23;
+        } break;
+
+        case 0x24: {
+            proc->mem[proc->ma] = pp_info.disk_index>>8;
+            proc->ma++;
+            proc->mem[proc->ma] = pp_info.disk_index;
+            proc->ma++;
+        }
+
+        case 0x25: {
+            proc->mem[proc->ma] = pp_info.disk[pp_info.disk_index];
+            proc->ma++;
+        } break;
+
+        case 0x26: {
+            out_subfunc_args_num = 1;
+            out_subfunc = out0x26;
+        } break;
+
+        case 0x27: {
+            out_subfunc_args_num = 1;
+            out_subfunc = out0x27;
+        } break;
+
+        case 0x28: {
+            out_subfunc_args_num = 1;
+            out_subfunc = out0x28;
         } break;
     }
 }
